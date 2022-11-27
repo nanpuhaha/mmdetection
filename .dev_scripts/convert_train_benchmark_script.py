@@ -24,8 +24,7 @@ def parse_args():
     parser.add_argument(
         '--out', type=str, help='path to save model benchmark script')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def main():
@@ -56,9 +55,7 @@ def main():
                 continue
             # print cfg name
             echo_info = f'echo \'{cfg}\' &'
-            commands.append(echo_info)
-            commands.append('\n')
-
+            commands.extend((echo_info, '\n'))
             fname, _ = osp.splitext(osp.basename(cfg))
             out_fname = osp.join(root_name, 'work_dir', fname)
             # default setting
@@ -77,9 +74,8 @@ def main():
             command_info += f'{cfg} '
             command_info += f'{out_fname} '
             if max_keep_ckpts:
-                command_info += f'--cfg-options ' \
-                                f'checkpoint_config.max_keep_ckpts=' \
-                                f'{max_keep_ckpts}' + ' '
+                command_info += f'--cfg-options checkpoint_config.max_keep_ckpts={max_keep_ckpts} '
+
             command_info += f'{stdout_cfg} &'
 
             commands.append(command_info)

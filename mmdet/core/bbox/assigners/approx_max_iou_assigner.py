@@ -101,15 +101,12 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         if num_squares == 0 or num_gts == 0:
             # No predictions and/or truth, return empty assignment
             overlaps = approxs.new(num_gts, num_squares)
-            assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
-            return assign_result
-
+            return self.assign_wrt_overlaps(overlaps, gt_labels)
         # re-organize anchors by approxs_per_octave x num_squares
         approxs = torch.transpose(
             approxs.view(num_squares, approxs_per_octave, 4), 0,
             1).contiguous().view(-1, 4)
-        assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
-            num_gts > self.gpu_assign_thr) else False
+        assign_on_cpu = self.gpu_assign_thr > 0 and num_gts > self.gpu_assign_thr
         # compute overlap and assign gt on CPU when number of GT is large
         if assign_on_cpu:
             device = approxs.device

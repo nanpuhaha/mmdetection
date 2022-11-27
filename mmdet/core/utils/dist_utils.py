@@ -148,7 +148,7 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
         x.reshape(shape) for x, shape in zip(
             torch.split(flatten_tensor, tensor_numels), tensor_shapes)
     ]
-    out_dict = {k: v for k, v in zip(py_key, split_tensors)}
+    out_dict = dict(zip(py_key, split_tensors))
     if isinstance(py_dict, OrderedDict):
         out_dict = OrderedDict(out_dict)
     return out_dict

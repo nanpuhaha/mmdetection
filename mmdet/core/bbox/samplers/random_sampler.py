@@ -47,10 +47,7 @@ class RandomSampler(BaseSampler):
 
         is_tensor = isinstance(gallery, torch.Tensor)
         if not is_tensor:
-            if torch.cuda.is_available():
-                device = torch.cuda.current_device()
-            else:
-                device = 'cpu'
+            device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
             gallery = torch.tensor(gallery, dtype=torch.long, device=device)
         # This is a temporary fix. We can revert the following code
         # when PyTorch fixes the abnormal return of torch.randperm.

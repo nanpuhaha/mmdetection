@@ -78,10 +78,7 @@ class ScoreHLRSampler(BaseSampler):
 
         is_tensor = isinstance(gallery, torch.Tensor)
         if not is_tensor:
-            if torch.cuda.is_available():
-                device = torch.cuda.current_device()
-            else:
-                device = 'cpu'
+            device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
             gallery = torch.tensor(gallery, dtype=torch.long, device=device)
         perm = torch.randperm(gallery.numel(), device=gallery.device)[:num]
         rand_inds = gallery[perm]
@@ -252,8 +249,7 @@ class ScoreHLRSampler(BaseSampler):
         if self.neg_pos_ub >= 0:
             _pos = max(1, num_sampled_pos)
             neg_upper_bound = int(self.neg_pos_ub * _pos)
-            if num_expected_neg > neg_upper_bound:
-                num_expected_neg = neg_upper_bound
+            num_expected_neg = min(num_expected_neg, neg_upper_bound)
         neg_inds, neg_label_weights = self.neg_sampler._sample_neg(
             assign_result,
             num_expected_neg,

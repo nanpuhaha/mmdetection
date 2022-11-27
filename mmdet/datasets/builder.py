@@ -60,28 +60,32 @@ def build_dataset(cfg, default_args=None):
     from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset,
                                    MultiImageMixDataset, RepeatDataset)
     if isinstance(cfg, (list, tuple)):
-        dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
+        return ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'ConcatDataset':
-        dataset = ConcatDataset(
+        return ConcatDataset(
             [build_dataset(c, default_args) for c in cfg['datasets']],
-            cfg.get('separate_eval', True))
+            cfg.get('separate_eval', True),
+        )
+
     elif cfg['type'] == 'RepeatDataset':
-        dataset = RepeatDataset(
-            build_dataset(cfg['dataset'], default_args), cfg['times'])
+        return RepeatDataset(
+            build_dataset(cfg['dataset'], default_args), cfg['times']
+        )
+
     elif cfg['type'] == 'ClassBalancedDataset':
-        dataset = ClassBalancedDataset(
-            build_dataset(cfg['dataset'], default_args), cfg['oversample_thr'])
+        return ClassBalancedDataset(
+            build_dataset(cfg['dataset'], default_args), cfg['oversample_thr']
+        )
+
     elif cfg['type'] == 'MultiImageMixDataset':
         cp_cfg = copy.deepcopy(cfg)
         cp_cfg['dataset'] = build_dataset(cp_cfg['dataset'])
         cp_cfg.pop('type')
-        dataset = MultiImageMixDataset(**cp_cfg)
+        return MultiImageMixDataset(**cp_cfg)
     elif isinstance(cfg.get('ann_file'), (list, tuple)):
-        dataset = _concat_dataset(cfg, default_args)
+        return _concat_dataset(cfg, default_args)
     else:
-        dataset = build_from_cfg(cfg, DATASETS, default_args)
-
-    return dataset
+        return build_from_cfg(cfg, DATASETS, default_args)
 
 
 def build_dataloader(dataset,
@@ -192,7 +196,7 @@ def build_dataloader(dataset,
         warnings.warn('persistent_workers is invalid because your pytorch '
                       'version is lower than 1.7.0')
 
-    data_loader = DataLoader(
+    return DataLoader(
         dataset,
         batch_size=batch_size,
         sampler=sampler,
@@ -201,9 +205,8 @@ def build_dataloader(dataset,
         collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
         pin_memory=kwargs.pop('pin_memory', False),
         worker_init_fn=init_fn,
-        **kwargs)
-
-    return data_loader
+        **kwargs
+    )
 
 
 def worker_init_fn(worker_id, num_workers, rank, seed):

@@ -30,8 +30,7 @@ def anchor_ctr_inside_region_flags(anchors, stride, region):
     f_anchors = anchors / stride
     x = (f_anchors[:, 0] + f_anchors[:, 2]) * 0.5
     y = (f_anchors[:, 1] + f_anchors[:, 3]) * 0.5
-    flags = (x >= x1) & (x <= x2) & (y >= y1) & (y <= y2)
-    return flags
+    return (x >= x1) & (x <= x2) & (y >= y1) & (y <= y2)
 
 
 @BBOX_ASSIGNERS.register_module()

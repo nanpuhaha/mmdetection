@@ -83,12 +83,12 @@ class TaskAlignedAssigner(BaseAssigner):
             if num_gt == 0:
                 # No gt boxes, assign everything to background
                 assigned_gt_inds[:] = 0
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = anchors.new_full((num_bboxes, ),
-                                                   -1,
-                                                   dtype=torch.long)
+            assigned_labels = (
+                None
+                if gt_labels is None
+                else anchors.new_full((num_bboxes,), -1, dtype=torch.long)
+            )
+
             assign_result = AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
             assign_result.assign_metrics = assign_metrics

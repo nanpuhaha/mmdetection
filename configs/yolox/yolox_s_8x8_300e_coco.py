@@ -57,15 +57,17 @@ train_dataset = dict(
     type='MultiImageMixDataset',
     dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
+        ann_file=f'{data_root}annotations/instances_train2017.json',
+        img_prefix=f'{data_root}train2017/',
         pipeline=[
             dict(type='LoadImageFromFile'),
-            dict(type='LoadAnnotations', with_bbox=True)
+            dict(type='LoadAnnotations', with_bbox=True),
         ],
         filter_empty_gt=False,
     ),
-    pipeline=train_pipeline)
+    pipeline=train_pipeline,
+)
+
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -92,14 +94,18 @@ data = dict(
     train=train_dataset,
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=test_pipeline),
+        ann_file=f'{data_root}annotations/instances_val2017.json',
+        img_prefix=f'{data_root}val2017/',
+        pipeline=test_pipeline,
+    ),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=test_pipeline))
+        ann_file=f'{data_root}annotations/instances_val2017.json',
+        img_prefix=f'{data_root}val2017/',
+        pipeline=test_pipeline,
+    ),
+)
+
 
 # optimizer
 # default 8 gpu

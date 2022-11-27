@@ -161,14 +161,14 @@ class GeneralData(NiceRepr):
         Returns:
             list: Contains all keys in data_fields.
         """
-        return [key for key in self._data_fields]
+        return list(self._data_fields)
 
     def meta_info_keys(self):
         """
         Returns:
             list: Contains all keys in meta_info_fields.
         """
-        return [key for key in self._meta_info_fields]
+        return list(self._meta_info_fields)
 
     def values(self):
         """

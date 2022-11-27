@@ -64,8 +64,7 @@ def bboxes_area(bboxes):
     assert bboxes.size(1) == 4
     w = (bboxes[:, 2] - bboxes[:, 0])
     h = (bboxes[:, 3] - bboxes[:, 1])
-    areas = w * h
-    return areas
+    return w * h
 
 
 @BBOX_ASSIGNERS.register_module()
@@ -197,7 +196,7 @@ class CenterRegionAssigner(BaseAssigner):
         if num_gts == 0 or num_bboxes == 0:
             # If no gts exist, assign all pixels to negative
             assigned_gt_ids = \
-                is_bbox_in_gt_core.new_zeros((num_bboxes,),
+                    is_bbox_in_gt_core.new_zeros((num_bboxes,),
                                              dtype=torch.long)
             pixels_in_gt_shadow = assigned_gt_ids.new_empty((0, 2))
         else:
@@ -205,7 +204,7 @@ class CenterRegionAssigner(BaseAssigner):
             #    have high priority to assign the pixel.
             sort_idx = self.get_gt_priorities(gt_bboxes)
             assigned_gt_ids, pixels_in_gt_shadow = \
-                self.assign_one_hot_gt_indices(is_bbox_in_gt_core,
+                    self.assign_one_hot_gt_indices(is_bbox_in_gt_core,
                                                is_bbox_in_gt_shadow,
                                                gt_priority=sort_idx)
 
@@ -233,9 +232,9 @@ class CenterRegionAssigner(BaseAssigner):
             shadowed_pixel_labels = pixels_in_gt_shadow.clone()
             if pixels_in_gt_shadow.numel() > 0:
                 pixel_idx, gt_idx =\
-                    pixels_in_gt_shadow[:, 0], pixels_in_gt_shadow[:, 1]
+                        pixels_in_gt_shadow[:, 0], pixels_in_gt_shadow[:, 1]
                 assert (assigned_gt_ids[pixel_idx] != gt_idx).all(), \
-                    'Some pixels are dually assigned to ignore and gt!'
+                        'Some pixels are dually assigned to ignore and gt!'
                 shadowed_pixel_labels[:, 1] = gt_labels[gt_idx - 1]
                 override = (
                     assigned_labels[pixel_idx] == shadowed_pixel_labels[:, 1])

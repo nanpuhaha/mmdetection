@@ -85,12 +85,12 @@ class GridAssigner(BaseAssigner):
             if num_gts == 0:
                 # No truth, assign everything to background
                 assigned_gt_inds[:] = 0
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = overlaps.new_full((num_bboxes, ),
-                                                    -1,
-                                                    dtype=torch.long)
+            assigned_labels = (
+                None
+                if gt_labels is None
+                else overlaps.new_full((num_bboxes,), -1, dtype=torch.long)
+            )
+
             return AssignResult(
                 num_gts,
                 assigned_gt_inds,
@@ -135,7 +135,7 @@ class GridAssigner(BaseAssigner):
             if gt_max_overlaps[i] > self.min_pos_iou:
                 if self.gt_max_assign_all:
                     max_iou_inds = (overlaps[i, :] == gt_max_overlaps[i]) & \
-                         box_responsible_flags.type(torch.bool)
+                             box_responsible_flags.type(torch.bool)
                     assigned_gt_inds[max_iou_inds] = i + 1
                 elif box_responsible_flags[gt_argmax_overlaps[i]]:
                     assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1

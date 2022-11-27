@@ -113,15 +113,19 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         _delete_=True,
-        type='RepeatDataset',  # use RepeatDataset to speed up training
+        type='RepeatDataset',
         times=5,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
-            pipeline=train_pipeline)),
+            ann_file=f'{data_root}annotations/instances_train2017.json',
+            img_prefix=f'{data_root}train2017/',
+            pipeline=train_pipeline,
+        ),
+    ),
     val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+    test=dict(pipeline=test_pipeline),
+)
+
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.015, momentum=0.9, weight_decay=4.0e-5)

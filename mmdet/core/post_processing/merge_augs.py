@@ -105,9 +105,8 @@ def merge_aug_bboxes(aug_bboxes, aug_scores, img_metas, rcnn_test_cfg):
     bboxes = torch.stack(recovered_bboxes).mean(dim=0)
     if aug_scores is None:
         return bboxes
-    else:
-        scores = torch.stack(aug_scores).mean(dim=0)
-        return bboxes, scores
+    scores = torch.stack(aug_scores).mean(dim=0)
+    return bboxes, scores
 
 
 def merge_aug_scores(aug_scores):
@@ -146,9 +145,10 @@ def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
                     f"Invalid flipping direction '{flip_direction}'")
         recovered_masks.append(mask)
 
-    if weights is None:
-        merged_masks = np.mean(recovered_masks, axis=0)
-    else:
-        merged_masks = np.average(
-            np.array(recovered_masks), axis=0, weights=np.array(weights))
-    return merged_masks
+    return (
+        np.mean(recovered_masks, axis=0)
+        if weights is None
+        else np.average(
+            np.array(recovered_masks), axis=0, weights=np.array(weights)
+        )
+    )

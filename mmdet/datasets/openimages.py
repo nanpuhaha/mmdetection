@@ -114,15 +114,14 @@ class OpenImagesDataset(CustomDataset):
         self.get_metas = get_metas
         self.load_from_file = load_from_file
         self.meta_file = meta_file
-        if self.data_root is not None:
-            if not osp.isabs(self.meta_file):
-                self.meta_file = osp.join(self.data_root, self.meta_file)
+        if self.data_root is not None and not osp.isabs(self.meta_file):
+            self.meta_file = osp.join(self.data_root, self.meta_file)
         self.filter_labels = filter_labels
         self.rank, self.world_size = get_dist_info()
         self.temp_img_metas = []
         self.test_img_metas = []
         self.test_img_shapes = []
-        self.load_from_pipeline = False if load_from_file else True
+        self.load_from_pipeline = not load_from_file
 
     def get_classes_from_csv(self, label_file):
         """Get classes name from file.
@@ -197,11 +196,11 @@ class OpenImagesDataset(CustomDataset):
                     float(line[5]),  # xmax
                     float(line[7])  # ymax
                 ]
-                is_occluded = True if int(line[8]) == 1 else False
-                is_truncated = True if int(line[9]) == 1 else False
-                is_group_of = True if int(line[10]) == 1 else False
-                is_depiction = True if int(line[11]) == 1 else False
-                is_inside = True if int(line[12]) == 1 else False
+                is_occluded = int(line[8]) == 1
+                is_truncated = int(line[9]) == 1
+                is_group_of = int(line[10]) == 1
+                is_depiction = int(line[11]) == 1
+                is_inside = int(line[12]) == 1
 
                 self.ann_infos[img_id].append(
                     dict(
@@ -275,7 +274,7 @@ class OpenImagesDataset(CustomDataset):
         is_depictions = np.array(is_depictions, dtype=np.bool)
         is_insides = np.array(is_insides, dtype=np.bool)
 
-        ann = dict(
+        return dict(
             bboxes=bboxes.astype(np.float32),
             labels=labels.astype(np.int64),
             bboxes_ignore=bboxes_ignore.astype(np.float32),
@@ -284,9 +283,8 @@ class OpenImagesDataset(CustomDataset):
             is_occludeds=is_occludeds,
             is_truncateds=is_truncateds,
             is_depictions=is_depictions,
-            is_insides=is_insides)
-
-        return ann
+            is_insides=is_insides,
+        )
 
     def get_meta_from_file(self, meta_file=''):
         """Get image metas from pkl file."""
@@ -346,8 +344,7 @@ class OpenImagesDataset(CustomDataset):
         if self.filter_empty_gt:
             warnings.warn('OpenImageDatasets does not support '
                           'filtering empty gt images.')
-        valid_inds = [i for i in range(len(self))]
-        return valid_inds
+        return list(range(len(self)))
 
     def _set_group_flag(self):
         """Set flag according to image aspect ratio."""
@@ -366,9 +363,8 @@ class OpenImagesDataset(CustomDataset):
             (class_num, class_num).
         """
 
-        if self.data_root is not None:
-            if not osp.isabs(hierarchy_file):
-                hierarchy_file = osp.join(self.data_root, hierarchy_file)
+        if self.data_root is not None and not osp.isabs(hierarchy_file):
+            hierarchy_file = osp.join(self.data_root, hierarchy_file)
         with open(hierarchy_file, 'r') as f:
             hierarchy = json.load(f)
         class_num = len(self.CLASSES)
@@ -406,12 +402,11 @@ class OpenImagesDataset(CustomDataset):
 
         if 'Subcategory' in hierarchy_map:
             for node in hierarchy_map['Subcategory']:
-                if 'LabelName' in node:
-                    children_name = node['LabelName']
-                    children_index = self.index_dict[children_name]
-                    children = [children_index]
-                else:
+                if 'LabelName' not in node:
                     continue
+                children_name = node['LabelName']
+                children_index = self.index_dict[children_name]
+                children = [children_index]
                 if len(parents) > 0:
                     for parent_index in parents:
                         if get_all_parents:
@@ -428,7 +423,7 @@ class OpenImagesDataset(CustomDataset):
         bboxes."""
         for i, ann in enumerate(annotations):
             assert len(ann['labels']) == len(ann['bboxes']) == \
-                   len(ann['gt_is_group_ofs'])
+                       len(ann['gt_is_group_ofs'])
             gt_bboxes = []
             gt_is_group_ofs = []
             gt_labels = []
@@ -468,8 +463,8 @@ class OpenImagesDataset(CustomDataset):
         """
         if image_level_annotations is not None:
             assert len(annotations) == \
-                   len(image_level_annotations) == \
-                   len(det_results)
+                       len(image_level_annotations) == \
+                       len(det_results)
         else:
             assert len(annotations) == len(det_results)
         for i in range(len(det_results)):
@@ -479,7 +474,7 @@ class OpenImagesDataset(CustomDataset):
             if image_level_annotations is not None:
                 labels = annotations[i]['labels']
                 image_level_labels = \
-                    image_level_annotations[i]['image_level_labels']
+                        image_level_annotations[i]['image_level_labels']
                 allowed_labeles = np.unique(
                     np.append(labels, image_level_labels))
             else:
@@ -489,10 +484,10 @@ class OpenImagesDataset(CustomDataset):
                 det_cls = np.where(self.class_label_tree[valid_class])[0]
                 for index in det_cls:
                     if index in allowed_labeles and \
-                            index != valid_class and \
-                            self.get_supercategory:
+                                index != valid_class and \
+                                self.get_supercategory:
                         det_results[i][index] = \
-                            np.concatenate((det_results[i][index],
+                                np.concatenate((det_results[i][index],
                                             results[valid_class]))
                     elif index not in allowed_labeles and self.filter_labels:
                         # Remove useless parts
@@ -548,7 +543,7 @@ class OpenImagesDataset(CustomDataset):
 
         if hasattr(self.file_client, 'get_local_path'):
             with self.file_client.get_local_path(image_level_ann_file) \
-                    as local_path:
+                        as local_path:
                 item_lists = self.load_image_label_from_csv(local_path)
         else:
             item_lists = self.load_image_label_from_csv(image_level_ann_file)
@@ -653,7 +648,7 @@ class OpenImagesDataset(CustomDataset):
 
         if self.load_image_level_labels:
             image_level_annotations = \
-                self.get_image_level_ann(self.image_level_ann_file)
+                    self.get_image_level_ann(self.image_level_ann_file)
         else:
             image_level_annotations = None
 
@@ -684,12 +679,12 @@ class OpenImagesDataset(CustomDataset):
                                        image_level_annotations)
         if use_group_of:
             assert ioa_thr is not None, \
-                'ioa_thr must have value when using group_of in evaluation.'
+                    'ioa_thr must have value when using group_of in evaluation.'
 
         eval_results = OrderedDict()
         iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
         ioa_thrs = [ioa_thr] if isinstance(ioa_thr, float) or ioa_thr is None \
-            else ioa_thr
+                else ioa_thr
 
         # get dataset type
         if len(self.CLASSES) == 500:
@@ -757,10 +752,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                 self.index_dict[label_name] = label_id - 1
 
         indexes = np.argsort(id_list)
-        classes_names = []
-        for index in indexes:
-            classes_names.append(label_list[index])
-        return classes_names
+        return [label_list[index] for index in indexes]
 
     def load_annotations(self, ann_file):
         """Load annotation from annotation file."""
@@ -784,7 +776,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                      float(sp[3]),
                      float(sp[4])])
                 labels.append(int(sp[0]) - 1)  # labels begin from 1
-                is_group_ofs.append(True if int(sp[5]) == 1 else False)
+                is_group_ofs.append(int(sp[5]) == 1)
             i += img_gt_size
 
             gt_bboxes = np.array(bboxes, dtype=np.float32)
@@ -873,12 +865,8 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         item_lists = defaultdict(list)
         with open(image_level_ann_file, 'r') as f:
             reader = csv.reader(f)
-            i = -1
-            for line in reader:
-                i += 1
-                if i == 0:
-                    continue
-                else:
+            for i, line in enumerate(reader):
+                if i != 0:
                     img_id = line[0]
                     label_id = line[1]
                     assert label_id in self.index_dict

@@ -26,8 +26,7 @@ def parse_args():
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='bbox score threshold')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def inference_model(config_name, checkpoint, args, logger=None):
@@ -35,12 +34,11 @@ def inference_model(config_name, checkpoint, args, logger=None):
     if args.aug:
         if 'flip' in cfg.data.test.pipeline[1]:
             cfg.data.test.pipeline[1].flip = True
-        else:
-            if logger is not None:
-                logger.error(f'{config_name}: unable to start aug test')
-            else:
-                print(f'{config_name}: unable to start aug test', flush=True)
+        elif logger is None:
+            print(f'{config_name}: unable to start aug test', flush=True)
 
+        else:
+            logger.error(f'{config_name}: unable to start aug test')
     model = init_detector(cfg, checkpoint, device=args.device)
     # test a single image
     result = inference_detector(model, args.img)
@@ -62,21 +60,20 @@ def main(args):
 
     # test single model
     if args.model_name:
-        if args.model_name in config:
-            model_infos = config[args.model_name]
-            if not isinstance(model_infos, list):
-                model_infos = [model_infos]
-            model_info = model_infos[0]
-            config_name = model_info['config'].strip()
-            print(f'processing: {config_name}', flush=True)
-            checkpoint = osp.join(args.checkpoint_root,
-                                  model_info['checkpoint'].strip())
-            # build the model from a config file and a checkpoint file
-            inference_model(config_name, checkpoint, args)
-            return
-        else:
+        if args.model_name not in config:
             raise RuntimeError('model name input error.')
 
+        model_infos = config[args.model_name]
+        if not isinstance(model_infos, list):
+            model_infos = [model_infos]
+        model_info = model_infos[0]
+        config_name = model_info['config'].strip()
+        print(f'processing: {config_name}', flush=True)
+        checkpoint = osp.join(args.checkpoint_root,
+                              model_info['checkpoint'].strip())
+        # build the model from a config file and a checkpoint file
+        inference_model(config_name, checkpoint, args)
+        return
     # test all model
     logger = get_root_logger(
         log_file='benchmark_test_image.log', log_level=logging.ERROR)

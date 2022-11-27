@@ -99,9 +99,9 @@ class ATSSAssigner(BaseAssigner):
         num_gt, num_bboxes = gt_bboxes.size(0), bboxes.size(0)
 
         message = 'Invalid alpha parameter because cls_scores or ' \
-                  'bbox_preds are None. If you want to use the ' \
-                  'cost-based ATSSAssigner,  please set cls_scores, ' \
-                  'bbox_preds and self.alpha at the same time. '
+                      'bbox_preds are None. If you want to use the ' \
+                      'cost-based ATSSAssigner,  please set cls_scores, ' \
+                      'bbox_preds and self.alpha at the same time. '
 
         if self.alpha is None:
             # ATSSAssigner
@@ -135,12 +135,12 @@ class ATSSAssigner(BaseAssigner):
             if num_gt == 0:
                 # No truth, assign everything to background
                 assigned_gt_inds[:] = 0
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = overlaps.new_full((num_bboxes, ),
-                                                    -1,
-                                                    dtype=torch.long)
+            assigned_labels = (
+                None
+                if gt_labels is None
+                else overlaps.new_full((num_bboxes,), -1, dtype=torch.long)
+            )
+
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
@@ -168,7 +168,7 @@ class ATSSAssigner(BaseAssigner):
         # Selecting candidates based on the center distance
         candidate_idxs = []
         start_idx = 0
-        for level, bboxes_per_level in enumerate(num_level_bboxes):
+        for bboxes_per_level in num_level_bboxes:
             # on each pyramid level, for each gt,
             # select k bbox whose center are closest to the gt center
             end_idx = start_idx + bboxes_per_level

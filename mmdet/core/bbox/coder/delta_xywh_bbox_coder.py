@@ -59,8 +59,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
-        encoded_bboxes = bbox2delta(bboxes, gt_bboxes, self.means, self.stds)
-        return encoded_bboxes
+        return bbox2delta(bboxes, gt_bboxes, self.means, self.stds)
 
     def decode(self,
                bboxes,
@@ -93,25 +92,36 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
         if pred_bboxes.ndim == 2 and not torch.onnx.is_in_onnx_export():
             # single image decode
-            decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means,
-                                        self.stds, max_shape, wh_ratio_clip,
-                                        self.clip_border, self.add_ctr_clamp,
-                                        self.ctr_clamp)
-        else:
-            if pred_bboxes.ndim == 3 and not torch.onnx.is_in_onnx_export():
-                warnings.warn(
-                    'DeprecationWarning: onnx_delta2bbox is deprecated '
-                    'in the case of batch decoding and non-ONNX, '
-                    'please use “delta2bbox” instead. In order to improve '
-                    'the decoding speed, the batch function will no '
-                    'longer be supported. ')
-            decoded_bboxes = onnx_delta2bbox(bboxes, pred_bboxes, self.means,
-                                             self.stds, max_shape,
-                                             wh_ratio_clip, self.clip_border,
-                                             self.add_ctr_clamp,
-                                             self.ctr_clamp)
+            return delta2bbox(
+                bboxes,
+                pred_bboxes,
+                self.means,
+                self.stds,
+                max_shape,
+                wh_ratio_clip,
+                self.clip_border,
+                self.add_ctr_clamp,
+                self.ctr_clamp,
+            )
 
-        return decoded_bboxes
+        if pred_bboxes.ndim == 3 and not torch.onnx.is_in_onnx_export():
+            warnings.warn(
+                'DeprecationWarning: onnx_delta2bbox is deprecated '
+                'in the case of batch decoding and non-ONNX, '
+                'please use “delta2bbox” instead. In order to improve '
+                'the decoding speed, the batch function will no '
+                'longer be supported. ')
+        return onnx_delta2bbox(
+            bboxes,
+            pred_bboxes,
+            self.means,
+            self.stds,
+            max_shape,
+            wh_ratio_clip,
+            self.clip_border,
+            self.add_ctr_clamp,
+            self.ctr_clamp,
+        )
 
 
 @mmcv.jit(coderize=True)

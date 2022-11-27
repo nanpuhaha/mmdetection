@@ -156,10 +156,7 @@ def inference_detector(model, imgs):
     with torch.no_grad():
         results = model(return_loss=False, rescale=True, **data)
 
-    if not is_batch:
-        return results[0]
-    else:
-        return results
+    return results if is_batch else results[0]
 
 
 async def async_inference_detector(model, imgs):
@@ -215,8 +212,7 @@ async def async_inference_detector(model, imgs):
     # We don't restore `torch.is_grad_enabled()` value during concurrent
     # inference since execution can overlap
     torch.set_grad_enabled(False)
-    results = await model.aforward_test(rescale=True, **data)
-    return results
+    return await model.aforward_test(rescale=True, **data)
 
 
 def show_result_pyplot(model,

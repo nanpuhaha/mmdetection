@@ -43,18 +43,18 @@ def process_checkpoint(in_file, out_file):
     else:
         torch.save(checkpoint, out_file)
     sha = subprocess.check_output(['sha256sum', out_file]).decode()
-    final_file = out_file.rstrip('.pth') + '-{}.pth'.format(sha[:8])
+    final_file = out_file.rstrip('.pth') + f'-{sha[:8]}.pth'
     subprocess.Popen(['mv', out_file, final_file])
     return final_file
 
 
 def is_by_epoch(config):
-    cfg = mmcv.Config.fromfile('./configs/' + config)
+    cfg = mmcv.Config.fromfile(f'./configs/{config}')
     return cfg.runner.type == 'EpochBasedRunner'
 
 
 def get_final_epoch_or_iter(config):
-    cfg = mmcv.Config.fromfile('./configs/' + config)
+    cfg = mmcv.Config.fromfile(f'./configs/{config}')
     if cfg.runner.type == 'EpochBasedRunner':
         return cfg.runner.max_epochs
     else:
@@ -71,21 +71,20 @@ def get_best_epoch_or_iter(exp_dir):
 
 
 def get_real_epoch_or_iter(config):
-    cfg = mmcv.Config.fromfile('./configs/' + config)
-    if cfg.runner.type == 'EpochBasedRunner':
-        epoch = cfg.runner.max_epochs
-        if cfg.data.train.type == 'RepeatDataset':
-            epoch *= cfg.data.train.times
-        return epoch
-    else:
+    cfg = mmcv.Config.fromfile(f'./configs/{config}')
+    if cfg.runner.type != 'EpochBasedRunner':
         return cfg.runner.max_iters
+    epoch = cfg.runner.max_epochs
+    if cfg.data.train.type == 'RepeatDataset':
+        epoch *= cfg.data.train.times
+    return epoch
 
 
 def get_final_results(log_json_path,
                       epoch_or_iter,
                       results_lut,
                       by_epoch=True):
-    result_dict = dict()
+    result_dict = {}
     last_val_line = None
     last_train_line = None
     last_val_line_idx = -1
@@ -103,10 +102,12 @@ def get_final_results(log_json_path,
 
                 if (log_line['mode'] == 'val'
                         and log_line['epoch'] == epoch_or_iter):
-                    result_dict.update({
+                    result_dict |= {
                         key: log_line[key]
-                        for key in results_lut if key in log_line
-                    })
+                        for key in results_lut
+                        if key in log_line
+                    }
+
                     return result_dict
             else:
                 if log_line['mode'] == 'train':
@@ -142,7 +143,7 @@ def get_dataset_name(config):
         WIDERFaceDataset='WIDER Face',
         OpenImagesDataset='OpenImagesDataset',
         OpenImagesChallengeDataset='OpenImagesChallengeDataset')
-    cfg = mmcv.Config.fromfile('./configs/' + config)
+    cfg = mmcv.Config.fromfile(f'./configs/{config}')
     return name_map[cfg.dataset_type]
 
 
@@ -194,9 +195,8 @@ def convert_model_info_to_pwc(model_infos):
                     Metrics={'PQ': metric}))
         pwc_model_info['Results'] = results
 
-        link_string = 'https://download.openmmlab.com/mmdetection/v2.0/'
-        link_string += '{}/{}'.format(model['config'].rstrip('.py'),
-                                      osp.split(model['model_path'])[-1])
+        link_string = f"https://download.openmmlab.com/mmdetection/v2.0/{model['config'].rstrip('.py')}/{osp.split(model['model_path'])[-1]}"
+
         pwc_model_info['Weights'] = link_string
         if cfg_folder_name in pwc_files:
             pwc_files[cfg_folder_name].append(pwc_model_info)
@@ -218,8 +218,7 @@ def parse_args():
         action='store_true',
         help='whether to gather the best model.')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def main():
@@ -232,10 +231,12 @@ def main():
     raw_configs = list(mmcv.scandir('./configs', '.py', recursive=True))
 
     # filter configs that is not trained in the experiments dir
-    used_configs = []
-    for raw_config in raw_configs:
-        if osp.exists(osp.join(models_root, raw_config)):
-            used_configs.append(raw_config)
+    used_configs = [
+        raw_config
+        for raw_config in raw_configs
+        if osp.exists(osp.join(models_root, raw_config))
+    ]
+
     print(f'Find {len(used_configs)} models to be gathered')
 
     # find final_ckpt and log file for trained each config
@@ -249,8 +250,7 @@ def main():
             final_model, final_epoch_or_iter = get_best_epoch_or_iter(exp_dir)
         else:
             final_epoch_or_iter = get_final_epoch_or_iter(used_config)
-            final_model = '{}_{}.pth'.format('epoch' if by_epoch else 'iter',
-                                             final_epoch_or_iter)
+            final_model = f"{'epoch' if by_epoch else 'iter'}_{final_epoch_or_iter}.pth"
 
         model_path = osp.join(exp_dir, final_model)
         # skip if the model is still training
@@ -261,7 +261,7 @@ def main():
         log_json_path = list(
             sorted(glob.glob(osp.join(exp_dir, '*.log.json'))))[-1]
         log_txt_path = list(sorted(glob.glob(osp.join(exp_dir, '*.log'))))[-1]
-        cfg = mmcv.Config.fromfile('./configs/' + used_config)
+        cfg = mmcv.Config.fromfile(f'./configs/{used_config}')
         results_lut = cfg.evaluation.metric
         if not isinstance(results_lut, list):
             results_lut = [results_lut]
@@ -269,7 +269,7 @@ def main():
         # when using Panoptic Dataset, the evaluation key is 'PQ'.
         for i, key in enumerate(results_lut):
             if 'mAP' not in key and 'PQ' not in key:
-                results_lut[i] = key + '_mAP'
+                results_lut[i] = f'{key}_mAP'
         model_performance = get_final_results(log_json_path,
                                               final_epoch_or_iter, results_lut,
                                               by_epoch)
@@ -332,7 +332,7 @@ def main():
 
     pwc_files = convert_model_info_to_pwc(publish_model_infos)
     for name in pwc_files:
-        with open(osp.join(models_out, name + '_metafile.yml'), 'w') as f:
+        with open(osp.join(models_out, f'{name}_metafile.yml'), 'w') as f:
             ordered_yaml_dump(pwc_files[name], f, encoding='utf-8')
 
 

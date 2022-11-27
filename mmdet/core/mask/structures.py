@@ -252,7 +252,7 @@ class BitmapMasks(BaseInstanceMasks):
         return iter(self.masks)
 
     def __repr__(self):
-        s = self.__class__.__name__ + '('
+        s = f'{self.__class__.__name__}('
         s += f'num_masks={len(self.masks)}, '
         s += f'height={self.height}, '
         s += f'width={self.width})'
@@ -318,7 +318,7 @@ class BitmapMasks(BaseInstanceMasks):
 
         # clip the boundary
         bbox = bbox.copy()
-        bbox[0::2] = np.clip(bbox[0::2], 0, self.width)
+        bbox[::2] = np.clip(bbox[::2], 0, self.width)
         bbox[1::2] = np.clip(bbox[1::2], 0, self.height)
         x1, y1, x2, y2 = bbox
         w = np.maximum(x2 - x1, 1)
@@ -526,8 +526,7 @@ class BitmapMasks(BaseInstanceMasks):
         from mmdet.utils.util_random import ensure_rng
         rng = ensure_rng(rng)
         masks = (rng.rand(num_masks, height, width) > 0.1).astype(dtype)
-        self = cls(masks, height=height, width=width)
-        return self
+        return cls(masks, height=height, width=width)
 
     def get_bboxes(self):
         num_masks = len(self)
@@ -622,7 +621,7 @@ class PolygonMasks(BaseInstanceMasks):
         return iter(self.masks)
 
     def __repr__(self):
-        s = self.__class__.__name__ + '('
+        s = f'{self.__class__.__name__}('
         s += f'num_masks={len(self.masks)}, '
         s += f'height={self.height}, '
         s += f'width={self.width})'
@@ -635,11 +634,11 @@ class PolygonMasks(BaseInstanceMasks):
     def rescale(self, scale, interpolation=None):
         """see :func:`BaseInstanceMasks.rescale`"""
         new_w, new_h = mmcv.rescale_size((self.width, self.height), scale)
-        if len(self.masks) == 0:
-            rescaled_masks = PolygonMasks([], new_h, new_w)
-        else:
-            rescaled_masks = self.resize((new_h, new_w))
-        return rescaled_masks
+        return (
+            PolygonMasks([], new_h, new_w)
+            if len(self.masks) == 0
+            else self.resize((new_h, new_w))
+        )
 
     def resize(self, out_shape, interpolation=None):
         """see :func:`BaseInstanceMasks.resize`"""
@@ -653,7 +652,7 @@ class PolygonMasks(BaseInstanceMasks):
                 resized_poly = []
                 for p in poly_per_obj:
                     p = p.copy()
-                    p[0::2] = p[0::2] * w_scale
+                    p[::2] = p[::2] * w_scale
                     p[1::2] = p[1::2] * h_scale
                     resized_poly.append(p)
                 resized_masks.append(resized_poly)
@@ -672,11 +671,11 @@ class PolygonMasks(BaseInstanceMasks):
                 for p in poly_per_obj:
                     p = p.copy()
                     if flip_direction == 'horizontal':
-                        p[0::2] = self.width - p[0::2]
+                        p[::2] = self.width - p[::2]
                     elif flip_direction == 'vertical':
                         p[1::2] = self.height - p[1::2]
                     else:
-                        p[0::2] = self.width - p[0::2]
+                        p[::2] = self.width - p[::2]
                         p[1::2] = self.height - p[1::2]
                     flipped_poly_per_obj.append(p)
                 flipped_masks.append(flipped_poly_per_obj)
@@ -691,7 +690,7 @@ class PolygonMasks(BaseInstanceMasks):
 
         # clip the boundary
         bbox = bbox.copy()
-        bbox[0::2] = np.clip(bbox[0::2], 0, self.width)
+        bbox[::2] = np.clip(bbox[::2], 0, self.width)
         bbox[1::2] = np.clip(bbox[1::2], 0, self.height)
         x1, y1, x2, y2 = bbox
         w = np.maximum(x2 - x1, 1)
@@ -706,7 +705,7 @@ class PolygonMasks(BaseInstanceMasks):
                 for p in poly_per_obj:
                     # pycocotools will clip the boundary
                     p = p.copy()
-                    p[0::2] = p[0::2] - bbox[0]
+                    p[::2] = p[::2] - bbox[0]
                     p[1::2] = p[1::2] - bbox[1]
                     cropped_poly_per_obj.append(p)
                 cropped_masks.append(cropped_poly_per_obj)
@@ -752,11 +751,11 @@ class PolygonMasks(BaseInstanceMasks):
                 p = p.copy()
                 # crop
                 # pycocotools will clip the boundary
-                p[0::2] = p[0::2] - bbox[0]
+                p[::2] = p[::2] - bbox[0]
                 p[1::2] = p[1::2] - bbox[1]
 
                 # resize
-                p[0::2] = p[0::2] * w_scale
+                p[::2] = p[::2] * w_scale
                 p[1::2] = p[1::2] * h_scale
                 resized_mask.append(p)
             resized_masks.append(resized_mask)
@@ -778,7 +777,7 @@ class PolygonMasks(BaseInstanceMasks):
             >>> assert np.all(new.masks[0][0][0::2] == self.masks[0][0][0::2] + 4)  # noqa: E501
         """
         assert fill_val is None or fill_val == 0, 'Here fill_val is not '\
-            f'used, and defaultly should be None or 0. got {fill_val}.'
+                f'used, and defaultly should be None or 0. got {fill_val}.'
         if len(self.masks) == 0:
             translated_masks = PolygonMasks([], *out_shape)
         else:
@@ -788,7 +787,7 @@ class PolygonMasks(BaseInstanceMasks):
                 for p in poly_per_obj:
                     p = p.copy()
                     if direction == 'horizontal':
-                        p[0::2] = np.clip(p[0::2] + offset, 0, out_shape[1])
+                        p[::2] = np.clip(p[::2] + offset, 0, out_shape[1])
                     elif direction == 'vertical':
                         p[1::2] = np.clip(p[1::2] + offset, 0, out_shape[0])
                     translated_poly_per_obj.append(p)
@@ -816,7 +815,7 @@ class PolygonMasks(BaseInstanceMasks):
             for poly_per_obj in self.masks:
                 sheared_poly = []
                 for p in poly_per_obj:
-                    p = np.stack([p[0::2], p[1::2]], axis=0)  # [2, n]
+                    p = np.stack([p[::2], p[1::2]], axis=0)
                     new_coords = np.matmul(shear_matrix, p)  # [2, n]
                     new_coords[0, :] = np.clip(new_coords[0, :], 0,
                                                out_shape[1])
@@ -839,7 +838,7 @@ class PolygonMasks(BaseInstanceMasks):
                 rotated_poly = []
                 for p in poly_per_obj:
                     p = p.copy()
-                    coords = np.stack([p[0::2], p[1::2]], axis=1)  # [n, 2]
+                    coords = np.stack([p[::2], p[1::2]], axis=1)
                     # pad 1 to convert from format [x, y] to homogeneous
                     # coordinates format [x, y, 1]
                     coords = np.concatenate(
@@ -875,9 +874,10 @@ class PolygonMasks(BaseInstanceMasks):
         """  # noqa: W501
         area = []
         for polygons_per_obj in self.masks:
-            area_per_obj = 0
-            for p in polygons_per_obj:
-                area_per_obj += self._polygon_area(p[0::2], p[1::2])
+            area_per_obj = sum(
+                self._polygon_area(p[::2], p[1::2]) for p in polygons_per_obj
+            )
+
             area.append(area_per_obj)
         return np.asarray(area)
 
@@ -901,10 +901,11 @@ class PolygonMasks(BaseInstanceMasks):
         """Convert masks to the format of ndarray."""
         if len(self.masks) == 0:
             return np.empty((0, self.height, self.width), dtype=np.uint8)
-        bitmap_masks = []
-        for poly_per_obj in self.masks:
-            bitmap_masks.append(
-                polygon_to_bitmap(poly_per_obj, self.height, self.width))
+        bitmap_masks = [
+            polygon_to_bitmap(poly_per_obj, self.height, self.width)
+            for poly_per_obj in self.masks
+        ]
+
         return np.stack(bitmap_masks)
 
     def to_tensor(self, dtype, device):
@@ -1068,8 +1069,7 @@ def polygon_to_bitmap(polygons, height, width):
     """
     rles = maskUtils.frPyObjects(polygons, height, width)
     rle = maskUtils.merge(rles)
-    bitmap_mask = maskUtils.decode(rle).astype(np.bool)
-    return bitmap_mask
+    return maskUtils.decode(rle).astype(np.bool)
 
 
 def bitmap_to_polygon(bitmap):

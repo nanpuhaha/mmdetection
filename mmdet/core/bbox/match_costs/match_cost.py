@@ -273,12 +273,11 @@ class DiceCost:
         numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
         if self.naive_dice:
             denominator = mask_preds.sum(-1)[:, None] + \
-                gt_masks.sum(-1)[None, :]
+                    gt_masks.sum(-1)[None, :]
         else:
             denominator = mask_preds.pow(2).sum(1)[:, None] + \
-                gt_masks.pow(2).sum(1)[None, :]
-        loss = 1 - (numerator + self.eps) / (denominator + self.eps)
-        return loss
+                    gt_masks.pow(2).sum(1)[None, :]
+        return 1 - (numerator + self.eps) / (denominator + self.eps)
 
     def __call__(self, mask_preds, gt_masks):
         """

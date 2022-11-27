@@ -25,8 +25,7 @@ def parse_args():
         '--async-test',
         action='store_true',
         help='whether to set async options for async inference.')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def main(args):

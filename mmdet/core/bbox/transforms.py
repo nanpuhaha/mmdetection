@@ -14,9 +14,12 @@ def find_inside_bboxes(bboxes, img_h, img_w):
     Returns:
         Tensor: Index of the remaining bboxes.
     """
-    inside_inds = (bboxes[:, 0] < img_w) & (bboxes[:, 2] > 0) \
-        & (bboxes[:, 1] < img_h) & (bboxes[:, 3] > 0)
-    return inside_inds
+    return (
+        (bboxes[:, 0] < img_w)
+        & (bboxes[:, 2] > 0)
+        & (bboxes[:, 1] < img_h)
+        & (bboxes[:, 3] > 0)
+    )
 
 
 def bbox_flip(bboxes, img_shape, direction='horizontal'):
@@ -125,12 +128,11 @@ def bbox2result(bboxes, labels, num_classes):
         list(ndarray): bbox results of each class
     """
     if bboxes.shape[0] == 0:
-        return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
-    else:
-        if isinstance(bboxes, torch.Tensor):
-            bboxes = bboxes.detach().cpu().numpy()
-            labels = labels.detach().cpu().numpy()
-        return [bboxes[labels == i, :] for i in range(num_classes)]
+        return [np.zeros((0, 5), dtype=np.float32) for _ in range(num_classes)]
+    if isinstance(bboxes, torch.Tensor):
+        bboxes = bboxes.detach().cpu().numpy()
+        labels = labels.detach().cpu().numpy()
+    return [bboxes[labels == i, :] for i in range(num_classes)]
 
 
 def distance2bbox(points, distance, max_shape=None):
@@ -235,11 +237,11 @@ def bbox_rescale(bboxes, scale_factor=1.0):
     x2 = cx + 0.5 * w
     y1 = cy - 0.5 * h
     y2 = cy + 0.5 * h
-    if bboxes.size(1) == 5:
-        rescaled_bboxes = torch.stack([inds_, x1, y1, x2, y2], dim=-1)
-    else:
-        rescaled_bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
-    return rescaled_bboxes
+    return (
+        torch.stack([inds_, x1, y1, x2, y2], dim=-1)
+        if bboxes.size(1) == 5
+        else torch.stack([x1, y1, x2, y2], dim=-1)
+    )
 
 
 def bbox_cxcywh_to_xyxy(bbox):

@@ -208,10 +208,7 @@ class AnchorGenerator:
         # use shape instead of len to keep tracing while exporting to onnx
         xx = x.repeat(y.shape[0])
         yy = y.view(-1, 1).repeat(1, x.shape[0]).view(-1)
-        if row_major:
-            return xx, yy
-        else:
-            return yy, xx
+        return (xx, yy) if row_major else (yy, xx)
 
     def grid_priors(self, featmap_sizes, dtype=torch.float32, device='cuda'):
         """Generate grid anchors in multiple feature levels.
@@ -275,10 +272,7 @@ class AnchorGenerator:
         # shifted anchors (K, A, 4), reshape to (K*A, 4)
 
         all_anchors = base_anchors[None, :, :] + shifts[:, None, :]
-        all_anchors = all_anchors.view(-1, 4)
-        # first A rows correspond to A anchors of (0, 0) in feature map,
-        # then (0, 1), (0, 2), ...
-        return all_anchors
+        return all_anchors.view(-1, 4)
 
     def sparse_priors(self,
                       prior_idxs,
@@ -310,10 +304,9 @@ class AnchorGenerator:
              num_base_anchors) % width * self.strides[level_idx][0]
         y = (prior_idxs // width //
              num_base_anchors) % height * self.strides[level_idx][1]
-        priors = torch.stack([x, y, x, y], 1).to(dtype).to(device) + \
-            self.base_anchors[level_idx][base_anchor_id, :].to(device)
-
-        return priors
+        return torch.stack([x, y, x, y], 1).to(dtype).to(
+            device
+        ) + self.base_anchors[level_idx][base_anchor_id, :].to(device)
 
     def grid_anchors(self, featmap_sizes, device='cuda'):
         """Generate grid anchors in multiple feature levels.
@@ -384,10 +377,7 @@ class AnchorGenerator:
         # shifted anchors (K, A, 4), reshape to (K*A, 4)
 
         all_anchors = base_anchors[None, :, :] + shifts[:, None, :]
-        all_anchors = all_anchors.view(-1, 4)
-        # first A rows correspond to A anchors of (0, 0) in feature map,
-        # then (0, 1), (0, 2), ...
-        return all_anchors
+        return all_anchors.view(-1, 4)
 
     def valid_flags(self, featmap_sizes, pad_shape, device='cuda'):
         """Generate valid flags of anchors in multiple feature levels.
@@ -515,7 +505,7 @@ class SSDAnchorGenerator(AnchorGenerator):
             step = int(np.floor(max_ratio - min_ratio) / (self.num_levels - 2))
             min_sizes = []
             max_sizes = []
-            for ratio in range(int(min_ratio), int(max_ratio) + 1, step):
+            for ratio in range(min_ratio, max_ratio + 1, step):
                 min_sizes.append(int(self.input_size * ratio / 100))
                 max_sizes.append(int(self.input_size * (ratio + step) / 100))
             if self.input_size == 300:
@@ -799,9 +789,7 @@ class YOLOAnchorGenerator(AnchorGenerator):
                 y_center + 0.5 * h
             ])
             base_anchors.append(base_anchor)
-        base_anchors = torch.stack(base_anchors, dim=0)
-
-        return base_anchors
+        return torch.stack(base_anchors, dim=0)
 
     def responsible_flags(self, featmap_sizes, gt_bboxes, device='cuda'):
         """Generate responsible anchor flags of grid cells in multiple scales.

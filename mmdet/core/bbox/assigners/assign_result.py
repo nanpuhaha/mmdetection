@@ -72,13 +72,12 @@ class AssignResult(util_mixins.NiceRepr):
             'max_overlaps': self.max_overlaps,
             'labels': self.labels,
         }
-        basic_info.update(self._extra_properties)
+        basic_info |= self._extra_properties
         return basic_info
 
     def __nice__(self):
         """str: a "nice" summary string describing this assign result"""
-        parts = []
-        parts.append(f'num_gts={self.num_gts!r}')
+        parts = [f'num_gts={self.num_gts!r}']
         if self.gt_inds is None:
             parts.append(f'gt_inds={self.gt_inds!r}')
         else:
@@ -119,8 +118,8 @@ class AssignResult(util_mixins.NiceRepr):
         from mmdet.core.bbox import demodata
         rng = demodata.ensure_rng(kwargs.get('rng', None))
 
-        num_gts = kwargs.get('num_gts', None)
-        num_preds = kwargs.get('num_preds', None)
+        num_gts = kwargs.get('num_gts')
+        num_preds = kwargs.get('num_preds')
         p_ignore = kwargs.get('p_ignore', 0.3)
         p_assigned = kwargs.get('p_assigned', 0.7)
         p_use_label = kwargs.get('p_use_label', 0.5)
@@ -151,7 +150,7 @@ class AssignResult(util_mixins.NiceRepr):
 
             assigned_idxs = np.where(is_assigned)[0]
             rng.shuffle(assigned_idxs)
-            assigned_idxs = assigned_idxs[0:n_assigned]
+            assigned_idxs = assigned_idxs[:n_assigned]
             assigned_idxs.sort()
 
             is_assigned[:] = 0
@@ -186,8 +185,7 @@ class AssignResult(util_mixins.NiceRepr):
             else:
                 labels = None
 
-        self = cls(num_gts, gt_inds, max_overlaps, labels)
-        return self
+        return cls(num_gts, gt_inds, max_overlaps, labels)
 
     def add_gt_(self, gt_labels):
         """Add ground truth as assigned results.

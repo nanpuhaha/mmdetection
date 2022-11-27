@@ -36,8 +36,7 @@ def parse_args():
         type=float,
         default=1,
         help='The interval of show (s), 0 is block')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def prefetch_img_metas(cfg, ori_wh):
@@ -46,8 +45,7 @@ def prefetch_img_metas(cfg, ori_wh):
     test_pipeline = Compose(cfg.data.test.pipeline)
     data = {'img': np.zeros((h, w, 3), dtype=np.uint8)}
     data = test_pipeline(data)
-    img_metas = data['img_metas'][0].data
-    return img_metas
+    return data['img_metas'][0].data
 
 
 def process_img(frame_resize, img_metas, device):
@@ -58,8 +56,7 @@ def process_img(frame_resize, img_metas, device):
     std = torch.from_numpy(img_metas['img_norm_cfg']['std']).to(device)
     frame_cuda = F.normalize(frame_cuda, mean=mean, std=std, inplace=True)
     frame_cuda = frame_cuda[None, :, :, :]  # NCHW
-    data = {'img': [frame_cuda], 'img_metas': [[img_metas]]}
-    return data
+    return {'img': [frame_cuda], 'img_metas': [[img_metas]]}
 
 
 def main():

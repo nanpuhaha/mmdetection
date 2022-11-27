@@ -56,7 +56,7 @@ data = dict(
     test=dict(pipeline=test_pipeline))
 # optimizer
 optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict()
+optimizer_config = {}
 # learning policy
 lr_config = dict(
     policy='step',

@@ -69,10 +69,7 @@ class VOCDataset(XMLDataset):
         iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
         if metric == 'mAP':
             assert isinstance(iou_thrs, list)
-            if self.year == 2007:
-                ds_name = 'voc07'
-            else:
-                ds_name = self.CLASSES
+            ds_name = 'voc07' if self.year == 2007 else self.CLASSES
             mean_aps = []
             for iou_thr in iou_thrs:
                 print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')

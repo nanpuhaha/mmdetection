@@ -60,7 +60,7 @@ class COCOPanoptic(COCO):
                     seg_ann['width'] = img_info['width']
                     img_to_anns[ann['image_id']].append(seg_ann)
                     # segment_id is not unique in coco dataset orz...
-                    if seg_ann['id'] in anns.keys():
+                    if seg_ann['id'] in anns:
                         anns[seg_ann['id']].append(seg_ann)
                     else:
                         anns[seg_ann['id']] = [seg_ann]
@@ -98,9 +98,9 @@ class COCOPanoptic(COCO):
         Returns:
             anns (object array): loaded ann objects
         """
-        anns = []
-
         if hasattr(ids, '__iter__') and hasattr(ids, '__len__'):
+            anns = []
+
             # self.anns is a list of annotation lists instead of
             # a list of annotations
             for id in ids:
@@ -346,14 +346,13 @@ class CocoPanopticDataset(CocoDataset):
 
             is_thing = self.coco.load_cats(ids=category_id)[0]['isthing']
             if is_thing:
-                is_crowd = ann.get('iscrowd', False)
-                if not is_crowd:
-                    gt_bboxes.append(bbox)
-                    gt_labels.append(contiguous_cat_id)
-                else:
+                if is_crowd := ann.get('iscrowd', False):
                     gt_bboxes_ignore.append(bbox)
                     is_thing = False
 
+                else:
+                    gt_bboxes.append(bbox)
+                    gt_labels.append(contiguous_cat_id)
             mask_info = {
                 'id': ann['id'],
                 'category': contiguous_cat_id,
@@ -409,7 +408,7 @@ class CocoPanopticDataset(CocoDataset):
 
     def _pan2json(self, results, outfile_prefix):
         """Convert panoptic results to COCO panoptic json style."""
-        label2cat = dict((v, k) for (k, v) in self.cat2label.items())
+        label2cat = {v: k for (k, v) in self.cat2label.items()}
         pred_annotations = []
         outdir = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
 
@@ -446,8 +445,7 @@ class CocoPanopticDataset(CocoDataset):
                 'file_name': segm_file
             }
             pred_annotations.append(record)
-        pan_json_results = dict(annotations=pred_annotations)
-        return pan_json_results
+        return dict(annotations=pred_annotations)
 
     def results2json(self, results, outfile_prefix):
         """Dump the results to a COCO style json file.
@@ -480,7 +478,7 @@ class CocoPanopticDataset(CocoDataset):
             dict[str: str]: Possible keys are "panoptic", "bbox", "segm", \
                 "proposal", and values are corresponding filenames.
         """
-        result_files = dict()
+        result_files = {}
         # panoptic segmentation results
         if 'pan_results' in results[0]:
             pan_results = [result['pan_results'] for result in results]
@@ -515,18 +513,17 @@ class CocoPanopticDataset(CocoDataset):
             'file_name': imgs[k]['segm_file']
         } for k, v in gt_json.items()]
         pred_json = mmcv.load(result_files['panoptic'])
-        pred_json = dict(
-            (el['image_id'], el) for el in pred_json['annotations'])
+        pred_json = {el['image_id']: el for el in pred_json['annotations']}
 
         # match the gt_anns and pred_anns in the same image
         matched_annotations_list = []
         for gt_ann in gt_json:
             img_id = gt_ann['image_id']
-            if img_id not in pred_json.keys():
-                raise Exception('no prediction for the image'
-                                ' with id: {}'.format(img_id))
-            matched_annotations_list.append((gt_ann, pred_json[img_id]))
+            if img_id in pred_json:
+                matched_annotations_list.append((gt_ann, pred_json[img_id]))
 
+            else:
+                raise Exception(f'no prediction for the image with id: {img_id}')
         gt_folder = self.seg_prefix
         pred_folder = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
 
@@ -549,10 +546,7 @@ class CocoPanopticDataset(CocoDataset):
 
         classwise_results = None
         if classwise:
-            classwise_results = {
-                k: v
-                for k, v in zip(self.CLASSES, pq_results['classwise'].values())
-            }
+            classwise_results = dict(zip(self.CLASSES, pq_results['classwise'].values()))
         print_panoptic_table(pq_results, classwise_results, logger=logger)
         results = parse_pq_results(pq_results)
         results['PQ_copypaste'] = (
@@ -605,23 +599,23 @@ class CocoPanopticDataset(CocoDataset):
         eval_results = {}
 
         outfile_prefix = os.path.join(tmp_dir.name, 'results') \
-            if tmp_dir is not None else jsonfile_prefix
+                if tmp_dir is not None else jsonfile_prefix
         if 'PQ' in metrics:
             eval_pan_results = self.evaluate_pan_json(
                 result_files, outfile_prefix, logger, classwise, nproc=nproc)
 
-            eval_results.update(eval_pan_results)
+            eval_results |= eval_pan_results
             metrics.remove('PQ')
 
         if (('bbox' in metrics) or ('segm' in metrics)
                 or ('proposal' in metrics)):
 
             assert 'ins_results' in results[0], 'instance segmentation' \
-                'results are absent from results'
+                    'results are absent from results'
 
             assert self.ins_ann_file is not None, 'Annotation '\
-                'file for instance segmentation or object detection ' \
-                'shuold not be None'
+                    'file for instance segmentation or object detection ' \
+                    'shuold not be None'
 
             coco_gt = COCO(self.ins_ann_file)
             panoptic_cat_ids = self.cat_ids
@@ -640,17 +634,17 @@ class CocoPanopticDataset(CocoDataset):
 
 def parse_pq_results(pq_results):
     """Parse the Panoptic Quality results."""
-    result = dict()
-    result['PQ'] = 100 * pq_results['All']['pq']
-    result['SQ'] = 100 * pq_results['All']['sq']
-    result['RQ'] = 100 * pq_results['All']['rq']
-    result['PQ_th'] = 100 * pq_results['Things']['pq']
-    result['SQ_th'] = 100 * pq_results['Things']['sq']
-    result['RQ_th'] = 100 * pq_results['Things']['rq']
-    result['PQ_st'] = 100 * pq_results['Stuff']['pq']
-    result['SQ_st'] = 100 * pq_results['Stuff']['sq']
-    result['RQ_st'] = 100 * pq_results['Stuff']['rq']
-    return result
+    return {
+        'PQ': 100 * pq_results['All']['pq'],
+        'SQ': 100 * pq_results['All']['sq'],
+        'RQ': 100 * pq_results['All']['rq'],
+        'PQ_th': 100 * pq_results['Things']['pq'],
+        'SQ_th': 100 * pq_results['Things']['sq'],
+        'RQ_th': 100 * pq_results['Things']['rq'],
+        'PQ_st': 100 * pq_results['Stuff']['pq'],
+        'SQ_st': 100 * pq_results['Stuff']['sq'],
+        'RQ_st': 100 * pq_results['Stuff']['rq'],
+    }
 
 
 def print_panoptic_table(pq_results, classwise_results=None, logger=None):
@@ -685,7 +679,7 @@ def print_panoptic_table(pq_results, classwise_results=None, logger=None):
         results_2d = itertools.zip_longest(
             *[results_flatten[i::num_columns] for i in range(num_columns)])
         data = [headers]
-        data += [result for result in results_2d]
+        data += list(results_2d)
         table = AsciiTable(data)
         print_log(
             'Classwise Panoptic Evaluation Results:\n' + table.table,

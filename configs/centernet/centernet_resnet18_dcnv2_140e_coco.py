@@ -98,11 +98,15 @@ data = dict(
         times=5,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
-            pipeline=train_pipeline)),
+            ann_file=f'{data_root}annotations/instances_train2017.json',
+            img_prefix=f'{data_root}train2017/',
+            pipeline=train_pipeline,
+        ),
+    ),
     val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+    test=dict(pipeline=test_pipeline),
+)
+
 
 # optimizer
 # Based on the default settings of modern detectors, the SGD effect is better

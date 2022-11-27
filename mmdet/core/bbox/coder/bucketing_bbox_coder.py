@@ -63,11 +63,15 @@ class BucketingBBoxCoder(BaseBBoxCoder):
 
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
-        encoded_bboxes = bbox2bucket(bboxes, gt_bboxes, self.num_buckets,
-                                     self.scale_factor, self.offset_topk,
-                                     self.offset_upperbound,
-                                     self.cls_ignore_neighbor)
-        return encoded_bboxes
+        return bbox2bucket(
+            bboxes,
+            gt_bboxes,
+            self.num_buckets,
+            self.scale_factor,
+            self.offset_topk,
+            self.offset_upperbound,
+            self.cls_ignore_neighbor,
+        )
 
     def decode(self, bboxes, pred_bboxes, max_shape=None):
         """Apply transformation `pred_bboxes` to `boxes`.
@@ -85,11 +89,15 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         cls_preds, offset_preds = pred_bboxes
         assert cls_preds.size(0) == bboxes.size(0) and offset_preds.size(
             0) == bboxes.size(0)
-        decoded_bboxes = bucket2bbox(bboxes, cls_preds, offset_preds,
-                                     self.num_buckets, self.scale_factor,
-                                     max_shape, self.clip_border)
-
-        return decoded_bboxes
+        return bucket2bbox(
+            bboxes,
+            cls_preds,
+            offset_preds,
+            self.num_buckets,
+            self.scale_factor,
+            max_shape,
+            self.clip_border,
+        )
 
 
 @mmcv.jit(coderize=True)

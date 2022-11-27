@@ -12,10 +12,7 @@ class PointGenerator:
     def _meshgrid(self, x, y, row_major=True):
         xx = x.repeat(len(y))
         yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
-        if row_major:
-            return xx, yy
-        else:
-            return yy, xx
+        return (xx, yy) if row_major else (yy, xx)
 
     def grid_points(self, featmap_size, stride=16, device='cuda'):
         feat_h, feat_w = featmap_size
@@ -24,8 +21,7 @@ class PointGenerator:
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         stride = shift_x.new_full((shift_xx.shape[0], ), stride)
         shifts = torch.stack([shift_xx, shift_yy, stride], dim=-1)
-        all_points = shifts.to(device)
-        return all_points
+        return shifts.to(device)
 
     def valid_flags(self, featmap_size, valid_size, device='cuda'):
         feat_h, feat_w = featmap_size
@@ -36,8 +32,7 @@ class PointGenerator:
         valid_x[:valid_w] = 1
         valid_y[:valid_h] = 1
         valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
-        valid = valid_xx & valid_yy
-        return valid
+        return valid_xx & valid_yy
 
 
 @PRIOR_GENERATORS.register_module()
@@ -171,8 +166,7 @@ class MlvlPointGenerator:
                                          stride_h).to(dtype)
             shifts = torch.stack([shift_xx, shift_yy, stride_w, stride_h],
                                  dim=-1)
-        all_points = shifts.to(device)
-        return all_points
+        return shifts.to(device)
 
     def valid_flags(self, featmap_sizes, pad_shape, device='cuda'):
         """Generate valid flags of points of multiple feature levels.
@@ -228,8 +222,7 @@ class MlvlPointGenerator:
         valid_x[:valid_w] = 1
         valid_y[:valid_h] = 1
         valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
-        valid = valid_xx & valid_yy
-        return valid
+        return valid_xx & valid_yy
 
     def sparse_priors(self,
                       prior_idxs,
