@@ -349,15 +349,16 @@ class LVISV05Dataset(CocoDataset):
                 'Package lvis is not installed. Please run "pip install git+https://github.com/lvis-dataset/lvis-api.git".'  # noqa: E501
             )
         assert isinstance(results, list), 'results must be a list'
-        assert len(results) == len(self), (
-            'The length of results is not equal to the dataset len: {} != {}'.
-            format(len(results), len(self)))
+        assert len(results) == len(
+            self
+        ), f'The length of results is not equal to the dataset len: {len(results)} != {len(self)}'
+
 
         metrics = metric if isinstance(metric, list) else [metric]
         allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast']
         for metric in metrics:
             if metric not in allowed_metrics:
-                raise KeyError('metric {} is not supported'.format(metric))
+                raise KeyError(f'metric {metric} is not supported')
 
         if jsonfile_prefix is None:
             tmp_dir = tempfile.TemporaryDirectory()
@@ -370,7 +371,7 @@ class LVISV05Dataset(CocoDataset):
         # get original api
         lvis_gt = self.coco
         for metric in metrics:
-            msg = 'Evaluating {}...'.format(metric)
+            msg = f'Evaluating {metric}...'
             if logger is None:
                 msg = '\n' + msg
             print_log(msg, logger=logger)
@@ -380,14 +381,14 @@ class LVISV05Dataset(CocoDataset):
                     results, proposal_nums, iou_thrs, logger='silent')
                 log_msg = []
                 for i, num in enumerate(proposal_nums):
-                    eval_results['AR@{}'.format(num)] = ar[i]
+                    eval_results[f'AR@{num}'] = ar[i]
                     log_msg.append('\nAR@{}\t{:.4f}'.format(num, ar[i]))
                 log_msg = ''.join(log_msg)
                 print_log(log_msg, logger=logger)
                 continue
 
             if metric not in result_files:
-                raise KeyError('{} is not in results'.format(metric))
+                raise KeyError(f'{metric} is not in results')
             try:
                 lvis_dt = LVISResults(lvis_gt, result_files[metric])
             except IndexError:
@@ -431,10 +432,7 @@ class LVISV05Dataset(CocoDataset):
                         nm = self.coco.load_cats([catId])[0]
                         precision = precisions[:, :, idx, 0]
                         precision = precision[precision > -1]
-                        if precision.size:
-                            ap = np.mean(precision)
-                        else:
-                            ap = float('nan')
+                        ap = np.mean(precision) if precision.size else float('nan')
                         results_per_category.append(
                             (f'{nm["name"]}', f'{float(ap):0.3f}'))
 
@@ -447,20 +445,20 @@ class LVISV05Dataset(CocoDataset):
                         for i in range(num_columns)
                     ])
                     table_data = [headers]
-                    table_data += [result for result in results_2d]
+                    table_data += list(results_2d)
                     table = AsciiTable(table_data)
                     print_log('\n' + table.table, logger=logger)
 
                 for k, v in lvis_results.items():
                     if k.startswith('AP'):
-                        key = '{}_{}'.format(metric, k)
+                        key = f'{metric}_{k}'
                         val = float('{:.3f}'.format(float(v)))
                         eval_results[key] = val
                 ap_summary = ' '.join([
                     '{}:{:.3f}'.format(k, float(v))
                     for k, v in lvis_results.items() if k.startswith('AP')
                 ])
-                eval_results['{}_mAP_copypaste'.format(metric)] = ap_summary
+                eval_results[f'{metric}_mAP_copypaste'] = ap_summary
             lvis_eval.print_results()
         if tmp_dir is not None:
             tmp_dir.cleanup()

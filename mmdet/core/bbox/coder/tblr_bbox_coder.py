@@ -43,9 +43,7 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         """
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
-        encoded_bboxes = bboxes2tblr(
-            bboxes, gt_bboxes, normalizer=self.normalizer)
-        return encoded_bboxes
+        return bboxes2tblr(bboxes, gt_bboxes, normalizer=self.normalizer)
 
     def decode(self, bboxes, pred_bboxes, max_shape=None):
         """Apply transformation `pred_bboxes` to `boxes`.
@@ -63,14 +61,13 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Decoded boxes.
         """
-        decoded_bboxes = tblr2bboxes(
+        return tblr2bboxes(
             bboxes,
             pred_bboxes,
             normalizer=self.normalizer,
             max_shape=max_shape,
-            clip_border=self.clip_border)
-
-        return decoded_bboxes
+            clip_border=self.clip_border,
+        )
 
 
 @mmcv.jit(coderize=True)

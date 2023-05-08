@@ -20,8 +20,7 @@ def parse_args():
     parser.add_argument(
         '--out', type=str, help='path to save model benchmark script')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def process_model_info(model_info, work_dir):
@@ -30,10 +29,12 @@ def process_model_info(model_info, work_dir):
     job_name = fname
     work_dir = osp.join(work_dir, fname)
     checkpoint = model_info['checkpoint'].strip()
-    if not isinstance(model_info['eval'], list):
-        evals = [model_info['eval']]
-    else:
-        evals = model_info['eval']
+    evals = (
+        model_info['eval']
+        if isinstance(model_info['eval'], list)
+        else [model_info['eval']]
+    )
+
     eval = ' '.join(evals)
     return dict(
         config=config,
@@ -81,15 +82,7 @@ def main():
         ('Please specify at least one operation (save/run/ the '
          'script) with the argument "--out" or "--run"')
 
-    commands = []
-    partition_name = 'PARTITION=$1 '
-    commands.append(partition_name)
-    commands.append('\n')
-
-    checkpoint_root = 'CHECKPOINT_DIR=$2 '
-    commands.append(checkpoint_root)
-    commands.append('\n')
-
+    commands = ['PARTITION=$1 ', '\n', 'CHECKPOINT_DIR=$2 ', '\n']
     script_name = osp.join('tools', 'slurm_test.sh')
     port = args.port
     work_dir = args.work_dir

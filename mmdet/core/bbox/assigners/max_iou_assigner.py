@@ -96,8 +96,10 @@ class MaxIoUAssigner(BaseAssigner):
             >>> expected_gt_inds = torch.LongTensor([1, 0])
             >>> assert torch.all(assign_result.gt_inds == expected_gt_inds)
         """
-        assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
-            gt_bboxes.shape[0] > self.gpu_assign_thr) else False
+        assign_on_cpu = (
+            self.gpu_assign_thr > 0 and gt_bboxes.shape[0] > self.gpu_assign_thr
+        )
+
         # compute overlap and assign gt on CPU when number of GT is large
         if assign_on_cpu:
             device = bboxes.device
@@ -154,12 +156,12 @@ class MaxIoUAssigner(BaseAssigner):
             if num_gts == 0:
                 # No truth, assign everything to background
                 assigned_gt_inds[:] = 0
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = overlaps.new_full((num_bboxes, ),
-                                                    -1,
-                                                    dtype=torch.long)
+            assigned_labels = (
+                None
+                if gt_labels is None
+                else overlaps.new_full((num_bboxes,), -1, dtype=torch.long)
+            )
+
             return AssignResult(
                 num_gts,
                 assigned_gt_inds,

@@ -27,10 +27,7 @@ def bbox_overlaps(bboxes1,
     """
 
     assert mode in ['iou', 'iof']
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
+    extra_length = 1. if use_legacy_coordinate else 0.
     bboxes1 = bboxes1.astype(np.float32)
     bboxes2 = bboxes2.astype(np.float32)
     rows = bboxes1.shape[0]
@@ -57,7 +54,7 @@ def bbox_overlaps(bboxes1,
         if mode == 'iou':
             union = area1[i] + area2 - overlap
         else:
-            union = area1[i] if not exchange else area2
+            union = area2 if exchange else area1[i]
         union = np.maximum(union, eps)
         ious[i, :] = overlap / union
     if exchange:

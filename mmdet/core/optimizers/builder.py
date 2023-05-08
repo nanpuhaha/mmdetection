@@ -29,5 +29,4 @@ def build_optimizer(model, cfg):
             type=constructor_type,
             optimizer_cfg=optimizer_cfg,
             paramwise_cfg=paramwise_cfg))
-    optimizer = optim_constructor(model)
-    return optimizer
+    return optim_constructor(model)

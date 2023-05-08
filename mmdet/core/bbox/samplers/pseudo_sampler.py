@@ -37,6 +37,6 @@ class PseudoSampler(BaseSampler):
         neg_inds = torch.nonzero(
             assign_result.gt_inds == 0, as_tuple=False).squeeze(-1).unique()
         gt_flags = bboxes.new_zeros(bboxes.shape[0], dtype=torch.uint8)
-        sampling_result = SamplingResult(pos_inds, neg_inds, bboxes, gt_bboxes,
-                                         assign_result, gt_flags)
-        return sampling_result
+        return SamplingResult(
+            pos_inds, neg_inds, bboxes, gt_bboxes, assign_result, gt_flags
+        )

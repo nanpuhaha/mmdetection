@@ -75,16 +75,16 @@ class InstanceData(GeneralData):
 
         else:
             assert isinstance(value, (torch.Tensor, np.ndarray, list)), \
-                f'Can set {type(value)}, only support' \
-                f' {(torch.Tensor, np.ndarray, list)}'
+                    f'Can set {type(value)}, only support' \
+                    f' {(torch.Tensor, np.ndarray, list)}'
 
             if self._data_fields:
                 assert len(value) == len(self), f'the length of ' \
-                                             f'values {len(value)} is ' \
-                                             f'not consistent with' \
-                                             f' the length ' \
-                                             f'of this :obj:`InstanceData` ' \
-                                             f'{len(self)} '
+                                                 f'values {len(value)} is ' \
+                                                 f'not consistent with' \
+                                                 f' the length ' \
+                                                 f'of this :obj:`InstanceData` ' \
+                                                 f'{len(self)} '
             super().__setattr__(name, value)
 
     def __getitem__(self, item):
@@ -115,16 +115,16 @@ class InstanceData(GeneralData):
         new_data = self.new()
         if isinstance(item, (torch.Tensor)):
             assert item.dim() == 1, 'Only support to get the' \
-                                 ' values along the first dimension.'
+                                     ' values along the first dimension.'
             if isinstance(item, torch.BoolTensor):
                 assert len(item) == len(self), f'The shape of the' \
-                                               f' input(BoolTensor)) ' \
-                                               f'{len(item)} ' \
-                                               f' does not match the shape ' \
-                                               f'of the indexed tensor ' \
-                                               f'in results_filed ' \
-                                               f'{len(self)} at ' \
-                                               f'first dimension. '
+                                                   f' input(BoolTensor)) ' \
+                                                   f'{len(item)} ' \
+                                                   f' does not match the shape ' \
+                                                   f'of the indexed tensor ' \
+                                                   f'in results_filed ' \
+                                                   f'{len(self)} at ' \
+                                                   f'first dimension. '
 
             for k, v in self.items():
                 if isinstance(v, torch.Tensor):
@@ -132,14 +132,12 @@ class InstanceData(GeneralData):
                 elif isinstance(v, np.ndarray):
                     new_data[k] = v[item.cpu().numpy()]
                 elif isinstance(v, list):
-                    r_list = []
                     # convert to indexes from boolTensor
                     if isinstance(item, torch.BoolTensor):
                         indexes = torch.nonzero(item).view(-1)
                     else:
                         indexes = item
-                    for index in indexes:
-                        r_list.append(v[index])
+                    r_list = [v[index] for index in indexes]
                     new_data[k] = r_list
         else:
             # item is a slice
@@ -181,8 +179,7 @@ class InstanceData(GeneralData):
         return new_data
 
     def __len__(self):
-        if len(self._data_fields):
-            for v in self.values():
-                return len(v)
-        else:
+        if not len(self._data_fields):
             raise AssertionError('This is an empty `InstanceData`.')
+        for v in self.values():
+            return len(v)

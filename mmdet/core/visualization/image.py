@@ -94,7 +94,7 @@ def draw_bboxes(ax, bboxes, color='g', alpha=0.8, thickness=2):
         matplotlib.Axes: The result axes.
     """
     polygons = []
-    for i, bbox in enumerate(bboxes):
+    for bbox in bboxes:
         bbox_int = bbox.astype(np.int32)
         poly = [[bbox_int[0], bbox_int[1]], [bbox_int[0], bbox_int[3]],
                 [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
@@ -179,7 +179,7 @@ def draw_masks(ax, img, masks, color=None, with_edge=True, alpha=0.8):
         matplotlib.Axes: The result axes.
         ndarray: The result image.
     """
-    taken_colors = set([0, 0, 0])
+    taken_colors = {0}
     if color is None:
         random_colors = np.random.randint(0, 255, (masks.size(0), 3))
         color = [tuple(c) for c in random_colors]

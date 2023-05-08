@@ -83,12 +83,13 @@ class CustomDataset(Dataset):
         if self.data_root is not None:
             if not osp.isabs(self.ann_file):
                 self.ann_file = osp.join(self.data_root, self.ann_file)
-            if not (self.img_prefix is None or osp.isabs(self.img_prefix)):
+            if self.img_prefix is not None and not osp.isabs(self.img_prefix):
                 self.img_prefix = osp.join(self.data_root, self.img_prefix)
-            if not (self.seg_prefix is None or osp.isabs(self.seg_prefix)):
+            if self.seg_prefix is not None and not osp.isabs(self.seg_prefix):
                 self.seg_prefix = osp.join(self.data_root, self.seg_prefix)
-            if not (self.proposal_file is None
-                    or osp.isabs(self.proposal_file)):
+            if self.proposal_file is not None and not osp.isabs(
+                self.proposal_file
+            ):
                 self.proposal_file = osp.join(self.data_root,
                                               self.proposal_file)
         # load annotations (and proposals)
@@ -103,21 +104,20 @@ class CustomDataset(Dataset):
                 'Please use MMCV>= 1.3.16 if you meet errors.')
             self.data_infos = self.load_annotations(self.ann_file)
 
-        if self.proposal_file is not None:
-            if hasattr(self.file_client, 'get_local_path'):
-                with self.file_client.get_local_path(
-                        self.proposal_file) as local_path:
-                    self.proposals = self.load_proposals(local_path)
-            else:
-                warnings.warn(
-                    'The used MMCV version does not have get_local_path. '
-                    f'We treat the {self.ann_file} as local paths and it '
-                    'might cause errors if the path is not a local path. '
-                    'Please use MMCV>= 1.3.16 if you meet errors.')
-                self.proposals = self.load_proposals(self.proposal_file)
-        else:
+        if self.proposal_file is None:
             self.proposals = None
 
+        elif hasattr(self.file_client, 'get_local_path'):
+            with self.file_client.get_local_path(
+                    self.proposal_file) as local_path:
+                self.proposals = self.load_proposals(local_path)
+        else:
+            warnings.warn(
+                'The used MMCV version does not have get_local_path. '
+                f'We treat the {self.ann_file} as local paths and it '
+                'might cause errors if the path is not a local path. '
+                'Please use MMCV>= 1.3.16 if you meet errors.')
+            self.proposals = self.load_proposals(self.proposal_file)
         # filter images too small and containing no annotations
         if not test_mode:
             valid_inds = self._filter_imgs()
@@ -180,11 +180,11 @@ class CustomDataset(Dataset):
         if self.filter_empty_gt:
             warnings.warn(
                 'CustomDataset does not support filtering empty gt images.')
-        valid_inds = []
-        for i, img_info in enumerate(self.data_infos):
-            if min(img_info['width'], img_info['height']) >= min_size:
-                valid_inds.append(i)
-        return valid_inds
+        return [
+            i
+            for i, img_info in enumerate(self.data_infos)
+            if min(img_info['width'], img_info['height']) >= min_size
+        ]
 
     def _set_group_flag(self):
         """Set flag according to image aspect ratio.
@@ -400,13 +400,10 @@ class CustomDataset(Dataset):
             if len(row_data) == 10:
                 table_data.append(row_data)
                 row_data = []
+        if len(row_data) >= 2 and row_data[-1] == '0':
+            row_data = row_data[:-2]
         if len(row_data) >= 2:
-            if row_data[-1] == '0':
-                row_data = row_data[:-2]
-            if len(row_data) >= 2:
-                table_data.append([])
-                table_data.append(row_data)
-
+            table_data.extend(([], row_data))
         table = AsciiTable(table_data)
         result += table.table
         return result

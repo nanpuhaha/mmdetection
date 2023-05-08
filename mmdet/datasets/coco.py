@@ -122,10 +122,10 @@ class CocoDataset(CustomDataset):
         """Filter images too small or without ground truths."""
         valid_inds = []
         # obtain images that contain annotation
-        ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
+        ids_with_ann = {_['image_id'] for _ in self.coco.anns.values()}
         # obtain images that contain annotations of the required categories
         ids_in_cat = set()
-        for i, class_id in enumerate(self.cat_ids):
+        for class_id in self.cat_ids:
             ids_in_cat |= set(self.coco.cat_img_map[class_id])
         # merge the image id sets of the two conditions and use the merged set
         # to filter out images if self.filter_empty_gt=True
@@ -192,14 +192,13 @@ class CocoDataset(CustomDataset):
 
         seg_map = img_info['filename'].rsplit('.', 1)[0] + self.seg_suffix
 
-        ann = dict(
+        return dict(
             bboxes=gt_bboxes,
             labels=gt_labels,
             bboxes_ignore=gt_bboxes_ignore,
             masks=gt_masks_ann,
-            seg_map=seg_map)
-
-        return ann
+            seg_map=seg_map,
+        )
 
     def xyxy2xywh(self, bbox):
         """Convert ``xyxy`` style bounding boxes to ``xywh`` style for COCO
@@ -228,9 +227,7 @@ class CocoDataset(CustomDataset):
             img_id = self.img_ids[idx]
             bboxes = results[idx]
             for i in range(bboxes.shape[0]):
-                data = dict()
-                data['image_id'] = img_id
-                data['bbox'] = self.xyxy2xywh(bboxes[i])
+                data = {'image_id': img_id, 'bbox': self.xyxy2xywh(bboxes[i])}
                 data['score'] = float(bboxes[i][4])
                 data['category_id'] = 1
                 json_results.append(data)
@@ -245,9 +242,7 @@ class CocoDataset(CustomDataset):
             for label in range(len(result)):
                 bboxes = result[label]
                 for i in range(bboxes.shape[0]):
-                    data = dict()
-                    data['image_id'] = img_id
-                    data['bbox'] = self.xyxy2xywh(bboxes[i])
+                    data = {'image_id': img_id, 'bbox': self.xyxy2xywh(bboxes[i])}
                     data['score'] = float(bboxes[i][4])
                     data['category_id'] = self.cat_ids[label]
                     json_results.append(data)
@@ -264,9 +259,7 @@ class CocoDataset(CustomDataset):
                 # bbox results
                 bboxes = det[label]
                 for i in range(bboxes.shape[0]):
-                    data = dict()
-                    data['image_id'] = img_id
-                    data['bbox'] = self.xyxy2xywh(bboxes[i])
+                    data = {'image_id': img_id, 'bbox': self.xyxy2xywh(bboxes[i])}
                     data['score'] = float(bboxes[i][4])
                     data['category_id'] = self.cat_ids[label]
                     bbox_json_results.append(data)
@@ -280,7 +273,7 @@ class CocoDataset(CustomDataset):
                     segms = seg[label]
                     mask_score = [bbox[4] for bbox in bboxes]
                 for i in range(bboxes.shape[0]):
-                    data = dict()
+                    data = {}
                     data['image_id'] = img_id
                     data['bbox'] = self.xyxy2xywh(bboxes[i])
                     data['score'] = float(mask_score[i])
@@ -310,7 +303,7 @@ class CocoDataset(CustomDataset):
             dict[str: str]: Possible keys are "bbox", "segm", "proposal", and \
                 values are corresponding filenames.
         """
-        result_files = dict()
+        result_files = {}
         if isinstance(results[0], list):
             json_results = self._det2json(results)
             result_files['bbox'] = f'{outfile_prefix}.bbox.json'
@@ -352,8 +345,7 @@ class CocoDataset(CustomDataset):
 
         recalls = eval_recalls(
             gt_bboxes, results, proposal_nums, iou_thrs, logger=logger)
-        ar = recalls.mean(axis=1)
-        return ar
+        return recalls.mean(axis=1)
 
     def format_results(self, results, jsonfile_prefix=None, **kwargs):
         """Format the results to json (standard format for COCO evaluation).
@@ -371,9 +363,10 @@ class CocoDataset(CustomDataset):
                 for saving json files when jsonfile_prefix is not specified.
         """
         assert isinstance(results, list), 'results must be a list'
-        assert len(results) == len(self), (
-            'The length of results is not equal to the dataset len: {} != {}'.
-            format(len(results), len(self)))
+        assert len(results) == len(
+            self
+        ), f'The length of results is not equal to the dataset len: {len(results)} != {len(self)}'
+
 
         if jsonfile_prefix is None:
             tmp_dir = tempfile.TemporaryDirectory()
@@ -427,9 +420,8 @@ class CocoDataset(CustomDataset):
         if iou_thrs is None:
             iou_thrs = np.linspace(
                 .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
-        if metric_items is not None:
-            if not isinstance(metric_items, list):
-                metric_items = [metric_items]
+        if metric_items is not None and not isinstance(metric_items, list):
+            metric_items = [metric_items]
 
         eval_results = OrderedDict()
         for metric in metrics:
@@ -551,10 +543,7 @@ class CocoDataset(CustomDataset):
                         nm = self.coco.loadCats(catId)[0]
                         precision = precisions[:, :, idx, 0, -1]
                         precision = precision[precision > -1]
-                        if precision.size:
-                            ap = np.mean(precision)
-                        else:
-                            ap = float('nan')
+                        ap = np.mean(precision) if precision.size else float('nan')
                         results_per_category.append(
                             (f'{nm["name"]}', f'{float(ap):0.3f}'))
 
@@ -567,7 +556,7 @@ class CocoDataset(CustomDataset):
                         for i in range(num_columns)
                     ])
                     table_data = [headers]
-                    table_data += [result for result in results_2d]
+                    table_data += list(results_2d)
                     table = AsciiTable(table_data)
                     print_log('\n' + table.table, logger=logger)
 

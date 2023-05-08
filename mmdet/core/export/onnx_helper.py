@@ -73,9 +73,6 @@ def get_k_for_topk(k, size):
             ret_k = torch.where(k < size, k, size)
     elif k < size:
         ret_k = k
-    else:
-        # ret_k is -1
-        pass
     return ret_k
 
 

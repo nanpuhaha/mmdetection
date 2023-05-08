@@ -22,8 +22,7 @@ def parse_args():
     parser.add_argument(
         '--show-all', action='store_true', help='show all model metrics')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
@@ -52,7 +51,7 @@ if __name__ == '__main__':
                     metric = mmcv.load(log_json_path)
                     if config in metric.get('config', {}):
 
-                        new_metrics = dict()
+                        new_metrics = {}
                         for record_metric_key in record_metrics:
                             record_metric_key_bk = record_metric_key
                             old_metric = record_metrics[record_metric_key]

@@ -46,21 +46,26 @@ data = dict(
     train=dict(
         type=dataset_type,
         ann_file=[
-            data_root + 'VOC2007/ImageSets/Main/trainval.txt',
-            data_root + 'VOC2012/ImageSets/Main/trainval.txt'
+            f'{data_root}VOC2007/ImageSets/Main/trainval.txt',
+            f'{data_root}VOC2012/ImageSets/Main/trainval.txt',
         ],
-        img_prefix=[data_root + 'VOC2007/', data_root + 'VOC2012/'],
-        pipeline=train_pipeline),
+        img_prefix=[f'{data_root}VOC2007/', f'{data_root}VOC2012/'],
+        pipeline=train_pipeline,
+    ),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
-        img_prefix=data_root + 'VOC2007/',
-        pipeline=test_pipeline),
+        ann_file=f'{data_root}VOC2007/ImageSets/Main/test.txt',
+        img_prefix=f'{data_root}VOC2007/',
+        pipeline=test_pipeline,
+    ),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
-        img_prefix=data_root + 'VOC2007/',
-        pipeline=test_pipeline))
+        ann_file=f'{data_root}VOC2007/ImageSets/Main/test.txt',
+        img_prefix=f'{data_root}VOC2007/',
+        pipeline=test_pipeline,
+    ),
+)
+
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)

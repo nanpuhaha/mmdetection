@@ -24,21 +24,23 @@ class OHEMSampler(BaseSampler):
         super(OHEMSampler, self).__init__(num, pos_fraction, neg_pos_ub,
                                           add_gt_as_proposals)
         self.context = context
-        if not hasattr(self.context, 'num_stages'):
-            self.bbox_head = self.context.bbox_head
-        else:
-            self.bbox_head = self.context.bbox_head[self.context.current_stage]
+        self.bbox_head = (
+            self.context.bbox_head[self.context.current_stage]
+            if hasattr(self.context, 'num_stages')
+            else self.context.bbox_head
+        )
 
         self.loss_key = loss_key
 
     def hard_mining(self, inds, num_expected, bboxes, labels, feats):
         with torch.no_grad():
             rois = bbox2roi([bboxes])
-            if not hasattr(self.context, 'num_stages'):
-                bbox_results = self.context._bbox_forward(feats, rois)
-            else:
-                bbox_results = self.context._bbox_forward(
-                    self.context.current_stage, feats, rois)
+            bbox_results = (
+                self.context._bbox_forward(self.context.current_stage, feats, rois)
+                if hasattr(self.context, 'num_stages')
+                else self.context._bbox_forward(feats, rois)
+            )
+
             cls_score = bbox_results['cls_score']
             loss = self.bbox_head.loss(
                 cls_score=cls_score,
@@ -104,8 +106,7 @@ class OHEMSampler(BaseSampler):
             neg_inds = neg_inds.squeeze(1)
         if len(neg_inds) <= num_expected:
             return neg_inds
-        else:
-            neg_labels = assign_result.labels.new_empty(
-                neg_inds.size(0)).fill_(self.bbox_head.num_classes)
-            return self.hard_mining(neg_inds, num_expected, bboxes[neg_inds],
-                                    neg_labels, feats)
+        neg_labels = assign_result.labels.new_empty(
+            neg_inds.size(0)).fill_(self.bbox_head.num_classes)
+        return self.hard_mining(neg_inds, num_expected, bboxes[neg_inds],
+                                neg_labels, feats)

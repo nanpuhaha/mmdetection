@@ -26,7 +26,6 @@ model = dict(
             sampler=dict(num=256))),
     test_cfg=dict(rcnn=dict(score_thr=1e-3)))
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
@@ -60,18 +59,21 @@ test_pipeline = [
             dict(type='Collect', keys=['img', 'proposals']),
         ])
 ]
+data_root = 'data/coco/'
 data = dict(
     train=dict(
-        proposal_file=data_root +
-        'proposals/crpn_r50_caffe_fpn_1x_train2017.pkl',
-        pipeline=train_pipeline),
+        proposal_file=f'{data_root}proposals/crpn_r50_caffe_fpn_1x_train2017.pkl',
+        pipeline=train_pipeline,
+    ),
     val=dict(
-        proposal_file=data_root +
-        'proposals/crpn_r50_caffe_fpn_1x_val2017.pkl',
-        pipeline=test_pipeline),
+        proposal_file=f'{data_root}proposals/crpn_r50_caffe_fpn_1x_val2017.pkl',
+        pipeline=test_pipeline,
+    ),
     test=dict(
-        proposal_file=data_root +
-        'proposals/crpn_r50_caffe_fpn_1x_val2017.pkl',
-        pipeline=test_pipeline))
+        proposal_file=f'{data_root}proposals/crpn_r50_caffe_fpn_1x_val2017.pkl',
+        pipeline=test_pipeline,
+    ),
+)
+
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

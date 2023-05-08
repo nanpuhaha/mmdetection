@@ -199,9 +199,8 @@ def train_detector(model,
         cfg.get('momentum_config', None),
         custom_hooks_config=cfg.get('custom_hooks', None))
 
-    if distributed:
-        if isinstance(runner, EpochBasedRunner):
-            runner.register_hook(DistSamplerSeedHook())
+    if distributed and isinstance(runner, EpochBasedRunner):
+        runner.register_hook(DistSamplerSeedHook())
 
     # register eval hooks
     if validate:

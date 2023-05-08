@@ -88,7 +88,7 @@ class HungarianAssigner(BaseAssigner):
             :obj:`AssignResult`: The assigned result.
         """
         assert gt_bboxes_ignore is None, \
-            'Only case when gt_bboxes_ignore is None is supported.'
+                'Only case when gt_bboxes_ignore is None is supported.'
         num_gts, num_bboxes = gt_bboxes.size(0), bbox_pred.size(0)
 
         # 1. assign -1 by default

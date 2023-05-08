@@ -64,10 +64,16 @@ class SimOTAAssigner(BaseAssigner):
             assign_result (obj:`AssignResult`): The assigned result.
         """
         try:
-            assign_result = self._assign(pred_scores, priors, decoded_bboxes,
-                                         gt_bboxes, gt_labels,
-                                         gt_bboxes_ignore, eps)
-            return assign_result
+            return self._assign(
+                pred_scores,
+                priors,
+                decoded_bboxes,
+                gt_bboxes,
+                gt_labels,
+                gt_bboxes_ignore,
+                eps,
+            )
+
         except RuntimeError:
             origin_device = pred_scores.device
             warnings.warn('OOM RuntimeError is raised due to the huge memory '
@@ -169,7 +175,7 @@ class SimOTAAssigner(BaseAssigner):
             (~is_in_boxes_and_center) * INF)
 
         matched_pred_ious, matched_gt_inds = \
-            self.dynamic_k_matching(
+                self.dynamic_k_matching(
                 cost_matrix, pairwise_ious, num_gt, valid_mask)
 
         # convert to AssignResult format

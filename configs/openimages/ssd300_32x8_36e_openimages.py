@@ -6,8 +6,6 @@ model = dict(
     bbox_head=dict(
         num_classes=601,
         anchor_generator=dict(basesize_ratio_range=(0.2, 0.9))))
-# dataset settings
-dataset_type = 'OpenImagesDataset'
 data_root = 'data/OpenImages/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 train_pipeline = [
@@ -47,28 +45,30 @@ test_pipeline = [
             dict(type='Collect', keys=['img']),
         ])
 ]
+dataset_type = 'OpenImagesDataset'
 data = dict(
-    samples_per_gpu=8,  # using 32 GPUS while training.
-    workers_per_gpu=0,  # workers_per_gpu > 0 may occur out of memory
+    samples_per_gpu=8,
+    workers_per_gpu=0,
     train=dict(
         _delete_=True,
         type='RepeatDataset',
         times=3,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root +
-            'annotations/oidv6-train-annotations-bbox.csv',
-            img_prefix=data_root + 'OpenImages/train/',
-            label_file=data_root +
-            'annotations/class-descriptions-boxable.csv',
-            hierarchy_file=data_root +
-            'annotations/bbox_labels_600_hierarchy.json',
-            pipeline=train_pipeline)),
+            ann_file=f'{data_root}annotations/oidv6-train-annotations-bbox.csv',
+            img_prefix=f'{data_root}OpenImages/train/',
+            label_file=f'{data_root}annotations/class-descriptions-boxable.csv',
+            hierarchy_file=f'{data_root}annotations/bbox_labels_600_hierarchy.json',
+            pipeline=train_pipeline,
+        ),
+    ),
     val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+    test=dict(pipeline=test_pipeline),
+)
+
 # optimizer
 optimizer = dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict()
+optimizer_config = {}
 # learning policy
 lr_config = dict(
     policy='step',

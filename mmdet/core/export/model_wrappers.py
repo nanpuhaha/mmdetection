@@ -105,7 +105,7 @@ class ONNXRuntimeDetector(DeployBaseDetector):
         try:
             from mmcv.ops import get_onnxruntime_op_path
             ort_custom_op_path = get_onnxruntime_op_path()
-        except (ImportError, ModuleNotFoundError):
+        except ImportError:
             warnings.warn('If input model has custom op from mmcv, \
                 you may have to build mmcv with ONNXRuntime from source.')
         session_options = ort.SessionOptions()
@@ -145,8 +145,7 @@ class ONNXRuntimeDetector(DeployBaseDetector):
             self.io_binding.bind_output(name)
         # run session to get outputs
         self.sess.run_with_iobinding(self.io_binding)
-        ort_outputs = self.io_binding.copy_outputs_to_cpu()
-        return ort_outputs
+        return self.io_binding.copy_outputs_to_cpu()
 
 
 class TensorRTDetector(DeployBaseDetector):
@@ -159,7 +158,7 @@ class TensorRTDetector(DeployBaseDetector):
         from mmcv.tensorrt import TRTWraper, load_tensorrt_plugin
         try:
             load_tensorrt_plugin()
-        except (ImportError, ModuleNotFoundError):
+        except ImportError:
             warnings.warn('If input model has custom op from mmcv, \
                 you may have to build mmcv with TensorRT from source.')
 
@@ -179,5 +178,4 @@ class TensorRTDetector(DeployBaseDetector):
         with torch.cuda.device(self.device_id), torch.no_grad():
             outputs = self.model({'input': input_data})
             outputs = [outputs[name] for name in self.model.output_names]
-        outputs = [out.detach().cpu().numpy() for out in outputs]
-        return outputs
+        return [out.detach().cpu().numpy() for out in outputs]
